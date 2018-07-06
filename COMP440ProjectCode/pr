@@ -1,1 +1,226 @@
 
+Stored Procedures
+1)Stored Procedure-1(INSERTION)
+For feature Insertion
+USE [s16guest04]
+GO
+/****** Object:  StoredProcedure [dbo].[feature_data]    Script Date: 5/2/2016 10:40:50 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create PROCEDURE [dbo].[feature_data]
+  @feature_id int ,
+  @feature_name varchar(50),
+  @feature_description varchar(80)
+  
+  
+AS 
+BEGIN 
+    Begin Try
+	 SET NOCOUNT ON 
+	 Begin Transaction
+ INSERT INTO [dbo].[feature]
+           ([feature_id],
+          [feature_name],
+		  [feature_description]
+		  )
+           
+     VALUES
+           ( 
+		   @feature_id  , 
+           @feature_name,
+		   @feature_description
+       
+            )
+	Commit Transaction
+	End Try
+	Begin Catch
+	Rollback Transaction
+	Select
+	   ERROR_NUMBER() as ErrorNumber,
+	   ERROR_MESSAGE() as ErrorMessage,
+	   ERROR_PROCEDURE() as ErrorProcedure,
+	   ERROR_STATE() as ErrorState,
+	   ERROR_SEVERITY() as ErrorSeverity,
+	   ERROR_LINE() as ErrorLine
+	END Catch
+ END
+ 
+
+
+
+
+Before insertion of feature data
+ 
+After insertion of a record in to a feature table by means of stored procedure
+
+ 
+
+Displaying error message while inserting duplicate data
+ 
+
+2. Update product version stored procedure
+Here in these when ever product gets updated its version gets updated corresponding to its version id
+Code:
+/****** Object:  StoredProcedure [dbo].[sp_product_version]    Script Date: 5/2/2016 3:13:15 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sp_product_version]
+--declaring the product attributes and version attributes
+@product_id int,
+@product_name varchar(50),
+@version_id int,
+@version_name varchar(90)
+
+AS 
+BEGIN 
+    Begin Try
+	 SET NOCOUNT ON 
+	 Begin Transaction
+----Updating the product table A by means of inner join with version table B
+update A  
+set A.product_name= @product_name
+from product A inner join version B
+on B.product_id = A.product_id 
+and A.product_id  = @product_id 
+
+----Updating the version table B by means of inner join with product table A
+update B
+set B.version_name = @version_name,B.version_id=@version_id
+from version B inner join product A
+    on B.product_id = A.product_id 
+    and A.product_id  = @product_id 
+
+
+Commit Transaction
+	End Try
+	Begin Catch
+	Rollback Transaction
+	Select
+	   ERROR_NUMBER() as ErrorNumber,
+	   ERROR_MESSAGE() as ErrorMessage ,
+	   ERROR_PROCEDURE() as ErrorProcedure,
+	   ERROR_STATE() as ErrorState,
+	   ERROR_SEVERITY() as ErrorSeverity,
+	   ERROR_LINE() as ErrorLine
+	END Catch
+ END
+GO
+Before the stored procedure
+ 
+After the update stored procedure
+ 
+3) Download Report Stored procedure
+USE [s16guest04]
+GO
+/****** Object:  StoredProcedure [dbo].[download_report]    Script Date: 5/2/2016 3:36:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[download_report]
+
+AS 
+BEGIN 
+    Begin Try
+	 SET NOCOUNT ON 
+	 Begin Transaction
+ select [product_name],
+       [version_name],
+	   --here below the month of download date is so called as Month
+	   MONTH(download_date) AS [Month],
+	   ---For counting the number of months in a date we use count operation
+	   COUNT(MONTH(download_date)) AS [Count]  
+	  
+FROM version
+INNER JOIN customer_download
+ON version.version_id=customer_download.downloaded_version
+INNER JOIN product
+ON product.product_id=version.product_id
+---the records for a particular manner to display we use group by
+	   GROUP BY [product_name],[version_name],MONTH(download_date)
+Commit Transaction
+	End Try
+	Begin Catch
+	Rollback Transaction
+	Select
+	   ERROR_NUMBER() as ErrorNumber,
+	   ERROR_MESSAGE() as ErrorMessage ,
+	   ERROR_PROCEDURE() as ErrorProcedure,
+	   ERROR_STATE() as ErrorState,
+	   ERROR_SEVERITY() as ErrorSeverity,
+	   ERROR_LINE() as ErrorLine
+	END Catch
+ END	  
+GO
+
+
+
+
+
+
+After executing the stored procedure
+ 
+
+4)Feature report stored procedure
+/****** Object:  StoredProcedure [dbo].[feature_report]    Script Date: 5/2/2016 11:34:27 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[feature_report]
+
+@version_name varchar(90),
+@release_name varchar(20)
+
+AS
+Begin
+ ----retrieving the number of new features for the particular version  by using inner join between version and feature by means of cross reference table Version_feature     
+ declare  @result int 
+SELECT @result=COUNT (feature_name ) 
+FROM version_feature
+INNER JOIN feature
+ON version_feature.feature_id=feature.feature_id
+INNER JOIN version
+ON version_feature.version_id=version.version_id
+WHERE version_name = @version_name 
+if(@result<>0)
+	print   'For '++ @version_name ++ ',There are '++ CAST(@result AS VARCHAR) ++   ' new features';
+   else
+   print 'There are bugs'
+declare  @Fresult int;
+
+----retrieving the number of new features for particular release by using inner join between development_release and feature by means of cross reference table release_feature  
+
+SELECT @Fresult=COUNT (feature_name ) 
+FROM release_feature
+INNER JOIN feature
+ON release_feature.feature_id=feature.feature_id
+INNER JOIN [development_release]
+ON release_feature.release_id=development_release.release_id
+
+WHERE release_name = @release_name 
+if(@Fresult<>0)
+
+ print 'There are '+ CAST(@result AS VARCHAR) + 'new features for'  ++ @release_name ++' release' ;
+ else
+   print 'It is a bug-fix release'
+END
+
+GO
+ 
+
+ 
+
+ 
+
+
+Bugrelease
+ 
+
+
+
+ 
